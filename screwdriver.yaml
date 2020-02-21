@@ -1,0 +1,32 @@
+version: 4
+shared:
+  environment:
+    SD_SETTING_SD_PR_COMMENTS: 'true'
+  settings:
+    email: srinivas.bhagavatula@verizonmedia.com
+  annotations:
+    '#comment':
+      - 'You might need to do some additional steps in order for yaml anchors to work properly. See http://yo/v4-yaml-anchors for details.'
+    package: echo "skip yinst package creation"
+    publish: echo "skip yinst package publishing"
+
+jobs:
+  component:
+    template: java-platform/maven-oracle-jdk@stable
+    environment:
+      MVN_SITE: 'site javadoc:javadoc'
+    steps:
+      - postpackage: sonar-scanner-maven
+      - prepackage: 'cp -rav target/site/apidocs/* ${DOCS_DIR}/'
+    requires:
+      - ~commit
+
+  pull-request:
+    template: java-platform/maven-oracle-jdk@stable
+    environment:
+      MVN_SITE: 'site javadoc:javadoc'
+    steps:
+      - postpackage: diff-cover-pr target/site/clover/clover.xml && sonar-scanner-maven
+      - prepackage: 'cp -rav target/site/apidocs/* ${DOCS_DIR}/'
+    requires:
+      - ~pr
